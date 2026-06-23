@@ -415,6 +415,8 @@ async function handleDateSelection() {
       via-cyan-300
       to-blue-500
       bg-clip-text
+      hidden
+      sm:block
       text-transparent
       drop-shadow-sm
     ">
@@ -629,7 +631,7 @@ async function handleDateSelection() {
       )}
       {/* QUICK CITIES: clickable examples with typical climate notes */}
       <div className="w-full max-w-md mt-6">
-        <h3 className="text-center text-sm text-white/70 mb-3">Explore sample cities</h3>
+        <h3 className="text-center text-sm text-white/70 mb-3">Don't have places in mind? Try these.</h3>
 
         <div className="flex flex-wrap justify-center gap-2">
           {quickCities.map((c) => (
