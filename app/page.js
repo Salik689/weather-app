@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 
 export default function Home() {
+  function getTodayISO() {
+    const today = new Date();
+    return today.toISOString().slice(0, 10);
+  }
   // City input from the user
   const [city, setCity] = useState("");
 
@@ -26,6 +30,11 @@ export default function Home() {
   const [copiedCity, setCopiedCity] = useState(null);
   // Toast visibility for errors and validation messages
   const [toastVisible, setToastVisible] = useState(false);
+  // Saved coordinates for the currently selected location
+  const [locationCoords, setLocationCoords] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(getTodayISO());
+  const [selectedDateWeather, setSelectedDateWeather] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Show toast when `error` is set, auto-hide after 4s
   useEffect(() => {
@@ -109,6 +118,7 @@ export default function Home() {
 
           await getWeeklyForecast(lat, lon);
           setTheme(getThemeWithTemp(w.weathercode, w.temperature));
+          setLocationCoords({ latitude: lat, longitude: lon });
           setCity(cityName);
           setWeather({
             name: cityName,   // ✅ REAL CITY NAME
@@ -244,6 +254,7 @@ export default function Home() {
         return;
       }
       const { latitude, longitude, name } = geoData.results[0];
+      setLocationCoords({ latitude, longitude });
       await getWeeklyForecast(latitude, longitude);
 
       const res = await fetch(
@@ -329,6 +340,52 @@ async function getWeeklyForecast(lat, lon) {
   } catch (err) {
     console.log("Weekly error:", err);
   }
+}
+
+async function getHistoricalWeather(lat, lon, date) {
+  try {
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&start_date=${date}&end_date=${date}&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`
+    );
+
+    const data = await res.json();
+    if (!data.daily) {
+      throw new Error("No historical weather available");
+    }
+    return {
+      date: data.daily.time[0],
+      max: data.daily.temperature_2m_max[0],
+      min: data.daily.temperature_2m_min[0],
+      code: data.daily.weather_code[0],
+    };
+  } catch (err) {
+    console.log("Historical weather error:", err);
+    throw err;
+  }
+}
+
+async function handleDateSelection() {
+  if (!locationCoords) {
+    setError("Search a city or use location first");
+    return;
+  }
+
+  setHistoryLoading(true);
+  setError("");
+  setSelectedDateWeather(null);
+
+  try {
+    const result = await getHistoricalWeather(
+      locationCoords.latitude,
+      locationCoords.longitude,
+      selectedDate
+    );
+    setSelectedDateWeather(result);
+  } catch (err) {
+    setError("Unable to load weather for that date");
+  }
+
+  setHistoryLoading(false);
 }
 
 
@@ -506,6 +563,50 @@ async function getWeeklyForecast(lat, lon) {
             </div>
           </div>
         )}
+        <div className="mt-8 w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
+          <h2 className="text-lg font-semibold mb-3">Pick a date</h2>
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-white/70">
+              Select a date from the calendar to view historical weather for the current location.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="date"
+                value={selectedDate}
+                max={getTodayISO()}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full sm:w-auto border-2 border-blue-500 rounded-lg px-4 py-2 text-black"
+              />
+              <button
+                onClick={handleDateSelection}
+                className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition"
+                disabled={historyLoading}
+              >
+                {historyLoading ? "Loading..." : "Show weather"}
+              </button>
+            </div>
+            {selectedDateWeather && (
+              <div className="mt-4 bg-white/10 border border-white/20 rounded-2xl p-4">
+                <p className="text-sm text-white/70">
+                  Historical weather for {selectedDateWeather.date}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="bg-white/5 rounded-2xl p-3">
+                    <p className="text-xs text-white/60">High</p>
+                    <p className="text-2xl font-semibold">{Math.round(selectedDateWeather.max)}°</p>
+                  </div>
+                  <div className="bg-white/5 rounded-2xl p-3">
+                    <p className="text-xs text-white/60">Low</p>
+                    <p className="text-2xl font-semibold">{Math.round(selectedDateWeather.min)}°</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-sm text-white/80">
+                  {conditions[selectedDateWeather.code] || "Unknown"}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* ERROR TOAST (replaces inline error paragraph) */}
