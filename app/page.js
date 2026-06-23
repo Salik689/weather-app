@@ -304,19 +304,19 @@ export default function Home() {
   ];
 
   const bg = {
-    sunny: "bg-gradient-to-br from-yellow-200 via-yellow-400 to-orange-500",
-    cloudy: "bg-gradient-to-br from-slate-500 via-gray-600 to-gray-800",
-    "cloudy-warm": "bg-gradient-to-br from-indigo-400 via-violet-400 to-pink-400",
-    "cloudy-cool": "bg-gradient-to-br from-slate-400 via-slate-600 to-gray-800",
-    mild: "bg-gradient-to-br from-sky-200 via-sky-300 to-indigo-400",
-    "mild-warm": "bg-gradient-to-br from-amber-200 via-amber-300 to-orange-400",
-    "mild-cool": "bg-gradient-to-br from-slate-300 via-slate-500 to-gray-700",
-    fog: "bg-gradient-to-br from-stone-400 via-gray-500 to-slate-700",
-    rain: "bg-gradient-to-br from-indigo-900 via-blue-800 to-sky-700",
-    snow: "bg-gradient-to-br from-blue-50 via-sky-100 to-cyan-200",
-    storm: "bg-gradient-to-br from-purple-900 via-gray-900 to-black",
-    thunderstorm: "bg-gradient-to-br from-gray-900 via-purple-800 to-yellow-400",
-    default: "bg-gradient-to-br from-slate-900 via-gray-800 to-slate-700",
+    sunny: "bg-gradient-to-br from-yellow-200 via-yellow-400 to-orange-500", // Yellow to orange
+    cloudy: "bg-gradient-to-br from-slate-500 via-gray-600 to-gray-800", // Gray
+    "cloudy-warm": "bg-gradient-to-br from-indigo-400 via-violet-400 to-pink-400", // Purple to pink
+    "cloudy-cool": "bg-gradient-to-br from-slate-400 via-slate-600 to-gray-800", // Gray-blue
+    mild: "bg-gradient-to-br from-sky-200 via-sky-300 to-indigo-400", // Light blue to indigo
+    "mild-warm": "bg-gradient-to-br from-amber-200 via-amber-300 to-orange-400", // Amber to orange
+    "mild-cool": "bg-gradient-to-br from-slate-300 via-slate-500 to-gray-700", // Slate gray
+    fog: "bg-gradient-to-br from-stone-400 via-gray-500 to-slate-700", // Stone gray
+    rain: "bg-gradient-to-br from-indigo-900 via-blue-800 to-sky-700", // Dark blue to sky
+    snow: "bg-gradient-to-br from-blue-50 via-sky-100 to-cyan-200", // Light blue to cyan
+    storm: "bg-gradient-to-br from-purple-900 via-gray-900 to-black", // Purple to black
+    thunderstorm: "bg-gradient-to-br from-gray-900 via-purple-800 to-yellow-400", // Dark gray, purple to yellow
+    default: "bg-gradient-to-br from-slate-900 via-gray-800 to-slate-700", // Dark slate
   };
 
 
@@ -574,10 +574,11 @@ async function handleDateSelection() {
             <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="date"
+                id="=date"
                 value={selectedDate}
                 max={getTodayISO()}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full sm:w-auto border-2 border-blue-500 rounded-lg px-4 py-2 text-black"
+                className=" border-2 border-blue-500 rounded-lg px-4 py-2 text-black"
               />
               <button
                 onClick={handleDateSelection}
