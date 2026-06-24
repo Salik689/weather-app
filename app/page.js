@@ -96,11 +96,10 @@ export default function Home() {
 
           // 1. Get weather
           const weatherRes = await fetch(
-            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`
           );
-
           const weatherData = await weatherRes.json();
-          const w = weatherData.current_weather;
+          const w = weatherData.current;
 
           // 2. Get CITY NAME (IMPORTANT FIX)
           const geoRes = await fetch(
@@ -117,16 +116,23 @@ export default function Home() {
             "Unknown location";
 
           await getWeeklyForecast(lat, lon);
-          setTheme(getThemeWithTemp(w.weathercode, w.temperature));
+          setTheme(getThemeWithTemp(
+            w.weather_code,
+            w.temperature_2m
+          ));
           setLocationCoords({ latitude: lat, longitude: lon });
           setCity(cityName);
+
           setWeather({
-            name: cityName,   // ✅ REAL CITY NAME
-            temp: w.temperature,
-            wind: w.windspeed,
-            condition: conditions[w.weathercode] || "Unknown",
-            gear: getGear(w.weathercode, w.temperature),
+            name: cityName,
+            temp: w.temperature_2m,
+            feelsLike: w.apparent_temperature,
+            humidity: w.relative_humidity_2m,
+            wind: w.wind_speed_10m,
+            condition: conditions[w.weather_code] || "Unknown",
+            gear: getGear(w.weather_code, w.temperature_2m),
           });
+
           setLocationAllowed(true);
         } catch (err) {
           console.log(err);
@@ -169,30 +175,23 @@ export default function Home() {
     // legacy single-arg kept for safety
     return getThemeWithTemp(code, undefined);
   }
-
   function getThemeWithTemp(code, temp) {
-    // Sunny
-    if (code === 0) return "sunny";
 
-    // Cloudy variants: warmer tones for warm days, cooler for chilly days
-    if ([1, 2].includes(code)) {
-      if (typeof temp === "number") return temp >= 20 ? "cloudy-warm" : "cloudy-cool";
-      return "cloudy";
-    }
-
-    // Mild overcast (code 3) — give it a softer, warmer palette when warm
-    if (code === 3) {
-      if (typeof temp === "number") return temp >= 20 ? "mild-warm" : "mild-cool";
-      return "mild";
-    }
-
-    // Fog (code 45)
-    if (code === 45) return "fog";
-
-    if ([51, 61, 63, 65].includes(code)) return "rain";
+    if ([61, 63, 65].includes(code)) return "rain";
     if ([71, 73, 75].includes(code)) return "snow";
+    if (code === 45) return "fog";
     if (code === 95) return "thunderstorm";
-    return "default";
+
+    if (temp >= 40) return "extreme-hot";
+    if (temp >= 35) return "very-hot";
+    if (temp >= 28) return "hot";
+    if (temp >= 20) return "warm";
+    if (temp >= 10) return "mild";
+    if (temp >= 5) return "cool";
+    if (temp >= 0) return "cold";
+    if (temp >= -15) return "freezing";
+
+    return "arctic";
   }
 
   // Determine recommended clothing. Prefer temperature-based suggestions
@@ -258,21 +257,28 @@ export default function Home() {
       await getWeeklyForecast(latitude, longitude);
 
       const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`
       );
-
       const data = await res.json();
-      const w = data.current_weather;
-      console.log("w: ", data.current_weather)
+      const w = data.current;
 
-      setTheme(getThemeWithTemp(w.weathercode, w.temperature));
+      console.log("w: ", data.current_weather)
+      console.log("Temp:", w.temperature_2m);
+      console.log("Code:", w.weather_code);
+      console.log("Theme:", getThemeWithTemp(w.weather_code, w.temperature_2m));
+     setTheme(getThemeWithTemp(
+  w.weather_code,
+  w.temperature_2m
+));
 
       setWeather({
         name,
-        temp: w.temperature,
-        wind: w.windspeed,
-        condition: conditions[w.weathercode] || "Unknown",
-        gear: getGear(w.weathercode, w.temperature),
+        temp: w.temperature_2m,
+        feelsLike: w.apparent_temperature,
+        humidity: w.relative_humidity_2m,
+        wind: w.wind_speed_10m,
+        condition: conditions[w.weather_code] || "Unknown",
+        gear: getGear(w.weather_code, w.temperature_2m),
       });
 
       setCity(name);
@@ -304,89 +310,120 @@ export default function Home() {
   ];
 
   const bg = {
-    sunny: "bg-gradient-to-br from-yellow-200 via-yellow-400 to-orange-500", // Yellow to orange
-    cloudy: "bg-gradient-to-br from-slate-500 via-gray-600 to-gray-800", // Gray
-    "cloudy-warm": "bg-gradient-to-br from-indigo-400 via-violet-400 to-pink-400", // Purple to pink
-    "cloudy-cool": "bg-gradient-to-br from-slate-400 via-slate-600 to-gray-800", // Gray-blue
-    mild: "bg-gradient-to-br from-sky-200 via-sky-300 to-indigo-400", // Light blue to indigo
-    "mild-warm": "bg-gradient-to-br from-amber-200 via-amber-300 to-orange-400", // Amber to orange
-    "mild-cool": "bg-gradient-to-br from-slate-300 via-slate-500 to-gray-700", // Slate gray
-    fog: "bg-gradient-to-br from-stone-400 via-gray-500 to-slate-700", // Stone gray
-    rain: "bg-gradient-to-br from-indigo-900 via-blue-800 to-sky-700", // Dark blue to sky
-    snow: "bg-gradient-to-br from-blue-50 via-sky-100 to-cyan-200", // Light blue to cyan
-    storm: "bg-gradient-to-br from-purple-900 via-gray-900 to-black", // Purple to black
-    thunderstorm: "bg-gradient-to-br from-gray-900 via-purple-800 to-yellow-400", // Dark gray, purple to yellow
-    default: "bg-gradient-to-br from-slate-900 via-gray-800 to-slate-700", // Dark slate
+    "extreme-hot":
+      "bg-gradient-to-br from-red-700 via-red-600 to-orange-600",
+
+    "very-hot":
+      "bg-gradient-to-br from-red-500 via-orange-500 to-orange-400",
+
+    hot:
+      "bg-gradient-to-br from-orange-500 via-orange-400 to-amber-400",
+
+    warm:
+      "bg-gradient-to-br from-amber-400 via-yellow-300 to-yellow-200",
+
+    mild:
+      "bg-gradient-to-br from-cyan-400 via-sky-400 to-blue-500",
+
+    cool:
+      "bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600",
+
+    cold:
+      "bg-gradient-to-br from-blue-700 via-indigo-700 to-indigo-900",
+
+    freezing:
+      "bg-gradient-to-br from-cyan-100 via-blue-200 to-blue-500",
+
+    arctic:
+      "bg-gradient-to-br from-white via-cyan-100 to-sky-300",
+
+    rain:
+      "bg-gradient-to-br from-slate-700 via-blue-800 to-slate-900",
+
+    storm:
+      "bg-gradient-to-br from-gray-900 via-purple-900 to-black",
+
+    snow:
+      "bg-gradient-to-br from-white via-sky-100 to-cyan-200",
+
+    cloudy:
+      "bg-gradient-to-br from-gray-400 via-slate-500 to-gray-700",
+
+    fog:
+      "bg-gradient-to-br from-stone-300 via-gray-400 to-slate-600",
+
+    default:
+      "bg-gradient-to-br from-slate-900 via-gray-800 to-slate-700",
   };
 
 
-async function getWeeklyForecast(lat, lon) {
-  try {
-    const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`
-    );
+  async function getWeeklyForecast(lat, lon) {
+    try {
+      const res = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`
+      );
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!data.daily) return;
+      if (!data.daily) return;
 
-    setWeeklyWeather({
-      time: data.daily.time,
-      max: data.daily.temperature_2m_max,
-      min: data.daily.temperature_2m_min,
-      code: data.daily.weather_code,
-    });
+      setWeeklyWeather({
+        time: data.daily.time,
+        max: data.daily.temperature_2m_max,
+        min: data.daily.temperature_2m_min,
+        code: data.daily.weather_code,
+      });
 
-  } catch (err) {
-    console.log("Weekly error:", err);
-  }
-}
-
-async function getHistoricalWeather(lat, lon, date) {
-  try {
-    const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&start_date=${date}&end_date=${date}&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`
-    );
-
-    const data = await res.json();
-    if (!data.daily) {
-      throw new Error("No historical weather available");
+    } catch (err) {
+      console.log("Weekly error:", err);
     }
-    return {
-      date: data.daily.time[0],
-      max: data.daily.temperature_2m_max[0],
-      min: data.daily.temperature_2m_min[0],
-      code: data.daily.weather_code[0],
-    };
-  } catch (err) {
-    console.log("Historical weather error:", err);
-    throw err;
-  }
-}
-
-async function handleDateSelection() {
-  if (!locationCoords) {
-    setError("Search a city or use location first");
-    return;
   }
 
-  setHistoryLoading(true);
-  setError("");
-  setSelectedDateWeather(null);
+  async function getHistoricalWeather(lat, lon, date) {
+    try {
+      const res = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&start_date=${date}&end_date=${date}&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto`
+      );
 
-  try {
-    const result = await getHistoricalWeather(
-      locationCoords.latitude,
-      locationCoords.longitude,
-      selectedDate
-    );
-    setSelectedDateWeather(result);
-  } catch (err) {
-    setError("Unable to load weather for that date");
+      const data = await res.json();
+      if (!data.daily) {
+        throw new Error("No historical weather available");
+      }
+      return {
+        date: data.daily.time[0],
+        max: data.daily.temperature_2m_max[0],
+        min: data.daily.temperature_2m_min[0],
+        code: data.daily.weather_code[0],
+      };
+    } catch (err) {
+      console.log("Historical weather error:", err);
+      throw err;
+    }
   }
 
-  setHistoryLoading(false);
-}
+  async function handleDateSelection() {
+    if (!locationCoords) {
+      setError("Search a city or use location first");
+      return;
+    }
+
+    setHistoryLoading(true);
+    setError("");
+    setSelectedDateWeather(null);
+
+    try {
+      const result = await getHistoricalWeather(
+        locationCoords.latitude,
+        locationCoords.longitude,
+        selectedDate
+      );
+      setSelectedDateWeather(result);
+    } catch (err) {
+      setError("Unable to load weather for that date");
+    }
+
+    setHistoryLoading(false);
+  }
 
 
   return (
@@ -481,8 +518,8 @@ async function handleDateSelection() {
               </div>
 
               {/* Condition */}
-              <p className="text-xl text-white/80 mt-2">
-                {weather.condition}
+              <p className="text-white/70">
+                Feels like {Math.round(weather.feelsLike)}°
               </p>
 
               {/* High / Low (optional for now) */}
@@ -516,7 +553,23 @@ async function handleDateSelection() {
                     km/h
                   </p>
                 </div>
+                <div
+                  className="
+    bg-white/10
+    backdrop-blur-xl
+    border border-white/20
+    rounded-2xl
+    p-5
+  "
+                >
+                  <p className="text-sm text-white/60">
+                    Humidity
+                  </p>
 
+                  <p className="text-3xl font-semibold mt-1">
+                    {weather.humidity}%
+                  </p>
+                </div>
                 <div className="
         bg-white/10
         backdrop-blur-xl
