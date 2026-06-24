@@ -248,7 +248,7 @@ export default function Home() {
       const geoData = await geo.json();
 
       if (!geoData.results) {
-        setError("City not found");
+        setError("Place not found");
         setLoading(false);
         return;
       }
@@ -428,7 +428,7 @@ export default function Home() {
 
   return (
 
-    <div className={`min-h-screen pt-20 flex flex-col items-center justify-between text-white ${bg[theme]} p-6`}>
+    <div className={`min-h-screen pt-20 flex flex-col items-center justify-between text-black ${bg[theme]} p-6`}>
 
       <header className=' backdrop-blur-md bg-white/10 shadow-md justify-between ' >
         <div className="logo">
@@ -518,7 +518,7 @@ export default function Home() {
               </div>
 
               {/* Condition */}
-              <p className="text-white/70">
+              <p className="text-slate-700">
                 Feels like {Math.round(weather.feelsLike)}°
               </p>
 
@@ -541,7 +541,7 @@ export default function Home() {
         rounded-2xl
         p-5
       ">
-                  <p className="text-sm text-white/60">
+                  <p className="text-sm text-slate-600">
                     Wind
                   </p>
 
@@ -562,7 +562,7 @@ export default function Home() {
     p-5
   "
                 >
-                  <p className="text-sm text-white/60">
+                  <p className="text-sm text-slate-600">
                     Humidity
                   </p>
 
@@ -577,7 +577,7 @@ export default function Home() {
         rounded-2xl
         p-5
       ">
-                  <p className="text-sm text-white/60">
+                  <p className="text-sm text-slate-600">
                     Appropriate outfit?
                   </p>
 
@@ -609,7 +609,7 @@ export default function Home() {
                       Max {Math.round(weeklyWeather.max[i])}° / Min {Math.round(weeklyWeather.min[i])}°
                     </div>
 
-                    <div className="text-xs text-white/70">
+                    <div className="text-xs text-slate-600">
                       {conditions[weeklyWeather.code[i]] || "Unknown"}
                     </div>
                   </div>
@@ -621,7 +621,7 @@ export default function Home() {
         <div className="mt-8 w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
           <h2 className="text-lg font-semibold mb-3">Pick a date</h2>
           <div className="flex flex-col gap-3">
-            <p className="text-sm text-white/70">
+            <p className="text-sm text-slate-700">
               Select a date from the calendar to view historical weather for the current location.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -648,15 +648,15 @@ export default function Home() {
                 </p>
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div className="bg-white/5 rounded-2xl p-3">
-                    <p className="text-xs text-white/60">High</p>
+                    <p className="text-xs text-slate-600">High</p>
                     <p className="text-2xl font-semibold">{Math.round(selectedDateWeather.max)}°</p>
                   </div>
                   <div className="bg-white/5 rounded-2xl p-3">
-                    <p className="text-xs text-white/60">Low</p>
+                    <p className="text-xs text-slate-600">Low</p>
                     <p className="text-2xl font-semibold">{Math.round(selectedDateWeather.min)}°</p>
                   </div>
                 </div>
-                <p className="mt-3 text-sm text-white/80">
+                <p className="mt-3 text-sm text-slate-700">
                   {conditions[selectedDateWeather.code] || "Unknown"}
                 </p>
               </div>
@@ -668,7 +668,7 @@ export default function Home() {
       {/* ERROR TOAST (replaces inline error paragraph) */}
       {toastVisible && (
         <div className="fixed inset-x-0 bottom-4 z-50 flex justify-end px-4 pointer-events-none">
-          <div className="bg-red-600/95 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm pointer-events-auto">
+          <div className="bg-red-600/95 text-black px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm pointer-events-auto">
             <div className="flex-1 text-sm">{error}</div>
             <button
               onClick={() => {
@@ -676,7 +676,7 @@ export default function Home() {
                 setError("");
               }}
               aria-label="Dismiss"
-              className="text-white/90 hover:text-white"
+              className="text-slate-900 hover:text-slate-800"
             >
               ✕
             </button>
@@ -685,7 +685,7 @@ export default function Home() {
       )}
       {/* QUICK CITIES: clickable examples with typical climate notes */}
       <div className="w-full max-w-md mt-6">
-        <h3 className="text-center text-sm text-white/70 mb-3">Don't have places in mind? Try these.</h3>
+        <h3 className="text-center text-sm text-slate-700 mb-3">Don't have places in mind? Try these.</h3>
 
         <div className="flex flex-wrap justify-center gap-2">
           {quickCities.map((c) => (
@@ -696,11 +696,11 @@ export default function Home() {
               <div className="flex flex-col text-left">
                 <button
                   onClick={() => getWeather(c.name)}
-                  className="hover:underline text-white"
+                  className="hover:underline text-black"
                 >
                   {c.name}
                 </button>
-                <span className="text-xs text-white/60">{c.note}</span>
+                <span className="text-xs text-slate-600">{c.note}</span>
               </div>
 
               <button
