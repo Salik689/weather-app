@@ -85,27 +85,39 @@ export default function Home() {
 
     setLoading(true);
     setError("");
+    setLocationAllowed(null);
+
+    if (navigator.permissions) {
+      try {
+        const permission = await navigator.permissions.query({ name: "geolocation" });
+        if (permission.state === "denied") {
+          setLocationAllowed(false);
+          setError(
+            "Location access is blocked in your browser. Enable location permission for this site and try again."
+          );
+          setLoading(false);
+          return;
+        }
+      } catch (permissionErr) {
+        console.log("Permission query failed", permissionErr);
+      }
+    }
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
 
         try {
-
-          // 1. Get weather
           const weatherRes = await fetch(
             `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`
           );
           const weatherData = await weatherRes.json();
           const w = weatherData.current;
 
-          // 2. Get CITY NAME (IMPORTANT FIX)
           const geoRes = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
           );
-
           const geoData = await geoRes.json();
 
           const cityName =
@@ -116,10 +128,7 @@ export default function Home() {
             "Unknown location";
 
           await getWeeklyForecast(lat, lon);
-          setTheme(getThemeWithTemp(
-            w.weather_code,
-            w.temperature_2m
-          ));
+          setTheme(getThemeWithTemp(w.weather_code, w.temperature_2m));
           setLocationCoords({ latitude: lat, longitude: lon });
           setCity(cityName);
 
@@ -136,17 +145,34 @@ export default function Home() {
           setLocationAllowed(true);
         } catch (err) {
           console.log(err);
-          setError("Failed to get location");
+          setLocationAllowed(false);
+          setError("Failed to get location data");
         }
 
         setLoading(false);
       },
-
       (err) => {
         setLocationAllowed(false);
         console.log(err);
-        setError("Location permission denied");
+
+        if (err.code === 1) {
+          setError(
+            "Location permission denied. Enable location access in your browser settings and try again."
+          );
+        } else if (err.code === 2) {
+          setError("Position unavailable. Please try again or check your device settings.");
+        } else if (err.code === 3) {
+          setError("Location request timed out. Please try again.");
+        } else {
+          setError("Failed to access location. Please try again.");
+        }
+
         setLoading(false);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 0,
       }
     );
   }
@@ -351,9 +377,8 @@ export default function Home() {
 
     fog:
       "bg-gradient-to-br from-stone-300 via-gray-400 to-slate-600",
-
-    default:
-      "bg-gradient-to-br from-slate-900 via-gray-800 to-slate-700",
+default:
+  "bg-gradient-to-br from-yellow-100 via-sky-100 to-white",
   };
 
 
@@ -492,15 +517,7 @@ export default function Home() {
       <div className="flex-1 flex items-center flex-col justify-center w-full">
 
         <div className=" hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 ease-out w-full flex justify-center items-center max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
-          {locationAllowed !== true && (
-            <button
-              onClick={getUserLocation}
-              className="mt-3 px-4 py-2 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 transition"
-            >
-              📍 Use My Location
-            </button>
-          )}
-
+         
 
 
           {/* WEATHER */}
@@ -619,6 +636,35 @@ export default function Home() {
             </div>
           </div>
         )}
+        {locationAllowed !== true && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md px-4">
+    <div className="w-full max-w-sm rounded-2xl bg-white/10 border border-white/20 shadow-2xl p-6 text-center backdrop-blur-xl animate-in fade-in zoom-in duration-300">
+
+      <div className="text-3xl mb-2">📍</div>
+
+      <h2 className="text-lg font-semibold text-white">
+        Location Access Needed
+      </h2>
+
+      <p className="text-xs text-white/70 mt-2">
+        We use your location to show accurate local weather conditions.
+      </p>
+
+      <button
+        onClick={getUserLocation}
+        className="mt-5 w-full px-4 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600 transition hover:scale-[1.02]"
+      >
+        {locationAllowed === false ? "Retry Location" : "Use My Location"}
+      </button>
+
+      {locationAllowed === false && (
+        <p className="text-xs text-white/60 mt-3">
+          If permission was denied, enable location in your browser settings and try again.
+        </p>
+      )}
+    </div>
+  </div>
+)}
         <div className=" hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 ease-out mt-8 w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
           <h2 className="text-lg font-semibold mb-3">Pick a date</h2>
           <div className="flex flex-col gap-3">
