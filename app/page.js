@@ -113,7 +113,7 @@ export default function Home() {
             `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`
           );
           const weatherData = await weatherRes.json();
-          const w = weatherData.current;
+          const w = weatherData.current || weatherData.current_weather;
 
           const geoRes = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
@@ -202,22 +202,34 @@ export default function Home() {
     return getThemeWithTemp(code, undefined);
   }
   function getThemeWithTemp(code, temp) {
+    const rainCodes = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82];
+    const snowCodes = [71, 73, 75, 77, 85, 86];
+    const stormCodes = [95, 96, 99];
+    const fogCodes = [45, 48];
+    const cloudyCodes = [3];
 
-    if ([61, 63, 65].includes(code)) return "rain";
-    if ([71, 73, 75].includes(code)) return "snow";
-    if (code === 45) return "fog";
-    if (code === 95) return "thunderstorm";
+    const temperatureTheme = () => {
+      if (typeof temp === "number" && !Number.isNaN(temp)) {
+        if (temp >= 40) return "extreme-hot";
+        if (temp >= 35) return "very-hot";
+        if (temp >= 28) return "hot";
+        if (temp >= 20) return "warm";
+        if (temp >= 10) return "mild";
+        if (temp >= 5) return "cool";
+        if (temp >= 0) return "cold";
+        if (temp >= -15) return "freezing";
+        return "arctic";
+      }
+      return "default";
+    };
 
-    if (temp >= 40) return "extreme-hot";
-    if (temp >= 35) return "very-hot";
-    if (temp >= 28) return "hot";
-    if (temp >= 20) return "warm";
-    if (temp >= 10) return "mild";
-    if (temp >= 5) return "cool";
-    if (temp >= 0) return "cold";
-    if (temp >= -15) return "freezing";
+    if (stormCodes.includes(code)) return "storm";
+    if (rainCodes.includes(code)) return "rain";
+    if (snowCodes.includes(code)) return "snow";
+    if (fogCodes.includes(code)) return "fog";
+    if (cloudyCodes.includes(code)) return temperatureTheme();
 
-    return "arctic";
+    return temperatureTheme();
   }
 
   // Determine recommended clothing. Prefer temperature-based suggestions
@@ -286,15 +298,17 @@ export default function Home() {
         `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`
       );
       const data = await res.json();
-      const w = data.current;
+const w = data.current || data.current_weather;
+          const temp = w?.temperature_2m ?? w?.temperature;
+          const code = w?.weather_code ?? w?.weathercode;
 
-      console.log("w: ", data.current_weather)
-      console.log("Temp:", w.temperature_2m);
-      console.log("Code:", w.weather_code);
-      console.log("Theme:", getThemeWithTemp(w.weather_code, w.temperature_2m));
+      console.log("w: ", w)
+      console.log("Temp:", temp);
+      console.log("Code:", code);
+      console.log("Theme:", getThemeWithTemp(code, temp));
       setTheme(getThemeWithTemp(
-        w.weather_code,
-        w.temperature_2m
+  code,
+  temp
       ));
 
       setWeather({
@@ -337,49 +351,463 @@ export default function Home() {
 
   const bg = {
     "extreme-hot":
-      "bg-gradient-to-br from-red-700 via-red-600 to-orange-600",
+      "bg-gradient-to-br from-red-800 via-orange-600 to-fuchsia-500",
 
     "very-hot":
-      "bg-gradient-to-br from-red-500 via-orange-500 to-orange-400",
+      "bg-gradient-to-br from-orange-600 via-amber-400 to-rose-400",
 
     hot:
-      "bg-gradient-to-br from-orange-500 via-orange-400 to-amber-400",
+      "bg-gradient-to-br from-orange-500 via-orange-400 to-yellow-300",
 
     warm:
-      "bg-gradient-to-br from-amber-400 via-yellow-300 to-yellow-200",
+      "bg-gradient-to-br from-orange-300 via-amber-300 to-sky-100",
 
     mild:
-      "bg-gradient-to-br from-cyan-400 via-sky-400 to-blue-500",
+      "bg-gradient-to-br from-sky-300 via-cyan-200 to-white",
 
     cool:
-      "bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600",
+      "bg-gradient-to-br from-sky-600 via-indigo-600 to-violet-700",
 
     cold:
-      "bg-gradient-to-br from-blue-700 via-indigo-700 to-indigo-900",
+      "bg-gradient-to-br from-indigo-800 via-blue-800 to-slate-900",
 
     freezing:
-      "bg-gradient-to-br from-cyan-100 via-blue-200 to-blue-500",
+      "bg-gradient-to-br from-cyan-200 via-slate-300 to-blue-500",
 
     arctic:
-      "bg-gradient-to-br from-white via-cyan-100 to-sky-300",
+      "bg-gradient-to-br from-sky-100 via-cyan-200 to-blue-400",
 
     rain:
-      "bg-gradient-to-br from-slate-700 via-blue-800 to-slate-900",
+      "bg-gradient-to-br from-slate-800 via-slate-700 to-blue-900",
 
     storm:
-      "bg-gradient-to-br from-gray-900 via-purple-900 to-black",
+      "bg-gradient-to-br from-slate-950 via-purple-900 to-black",
 
     snow:
-      "bg-gradient-to-br from-white via-sky-100 to-cyan-200",
+      "bg-gradient-to-br from-slate-100 via-sky-100 to-cyan-200",
 
     cloudy:
-      "bg-gradient-to-br from-gray-400 via-slate-500 to-gray-700",
+      "bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600",
 
     fog:
-      "bg-gradient-to-br from-stone-300 via-gray-400 to-slate-600",
+      "bg-gradient-to-br from-slate-300 via-stone-300 to-slate-400",
+
     default:
-  "bg-gradient-to-br from-blue-50 via-sky-100 to-cyan-100",
+      "bg-gradient-to-br from-blue-50 via-sky-100 to-cyan-100",
   };
+
+  const textColors = {
+    "extreme-hot": "text-slate-950",
+    "very-hot": "text-slate-950",
+    hot: "text-slate-950",
+    warm: "text-slate-950",
+    mild: "text-slate-950",
+    cool: "text-white",
+    cold: "text-white",
+    freezing: "text-slate-950",
+    arctic: "text-slate-950",
+    rain: "text-white",
+    storm: "text-white",
+    snow: "text-slate-950",
+    cloudy: "text-white",
+    fog: "text-slate-950",
+    default: "text-slate-950",
+  };
+
+  const isDarkTheme = ["cool", "cold", "rain", "storm", "cloudy"].includes(theme);
+  const mutedTextClass = isDarkTheme ? "text-slate-200/85" : "text-slate-700";
+  const subtleTextClass = isDarkTheme ? "text-slate-300" : "text-slate-500";
+  const cardTextClass = isDarkTheme ? "text-slate-100" : "text-slate-950";
+  const cardSubtleTextClass = isDarkTheme ? "text-slate-300" : "text-slate-600";
+
+  function renderBackgroundBlobs(theme) {
+    const blobSets = {
+      "extreme-hot": [
+        {
+          key: "extreme-hot-1",
+          className: "absolute rounded-full blur-3xl opacity-70 floating-blob slow",
+          style: {
+            top: "-10%",
+            left: "-10%",
+            width: "420px",
+            height: "420px",
+            background:
+              "radial-gradient(circle at 25% 25%, rgba(255, 112, 82, 0.45), transparent 55%)",
+          },
+        },
+        {
+          key: "extreme-hot-2",
+          className: "absolute rounded-full blur-3xl opacity-55 floating-blob medium",
+          style: {
+            bottom: "-8%",
+            right: "-8%",
+            width: "340px",
+            height: "340px",
+            background:
+              "radial-gradient(circle at 75% 35%, rgba(251, 191, 36, 0.30), transparent 55%)",
+          },
+        },
+      ],
+      "very-hot": [
+        {
+          key: "very-hot-1",
+          className: "absolute rounded-full blur-3xl opacity-70 floating-blob slow",
+          style: {
+            top: "5%",
+            left: "-8%",
+            width: "360px",
+            height: "360px",
+            background:
+              "radial-gradient(circle at 20% 20%, rgba(252, 165, 10, 0.45), transparent 55%)",
+          },
+        },
+        {
+          key: "very-hot-2",
+          className: "absolute rounded-full blur-3xl opacity-55 floating-blob medium",
+          style: {
+            bottom: "-12%",
+            right: "-10%",
+            width: "320px",
+            height: "320px",
+            background:
+              "radial-gradient(circle at 80% 25%, rgba(251, 191, 36, 0.30), transparent 55%)",
+          },
+        },
+      ],
+      hot: [
+        {
+          key: "hot-1",
+          className: "absolute rounded-full blur-3xl opacity-70 floating-blob slow",
+          style: {
+            top: "-12%",
+            left: "10%",
+            width: "380px",
+            height: "380px",
+            background:
+              "radial-gradient(circle at 30% 30%, rgba(255, 166, 56, 0.40), transparent 55%)",
+          },
+        },
+        {
+          key: "hot-2",
+          className: "absolute rounded-full blur-3xl opacity-55 floating-blob medium",
+          style: {
+            bottom: "-10%",
+            right: "5%",
+            width: "320px",
+            height: "320px",
+            background:
+              "radial-gradient(circle at 70% 40%, rgba(251, 146, 60, 0.30), transparent 55%)",
+          },
+        },
+      ],
+      warm: [
+        {
+          key: "warm-1",
+          className: "absolute rounded-full blur-3xl opacity-70 floating-blob slow",
+          style: {
+            top: "-8%",
+            left: "-8%",
+            width: "400px",
+            height: "400px",
+            background:
+              "radial-gradient(circle at 25% 25%, rgba(56, 189, 248, 0.30), transparent 55%)",
+          },
+        },
+        {
+          key: "warm-2",
+          className: "absolute rounded-full blur-3xl opacity-50 floating-blob medium",
+          style: {
+            bottom: "-10%",
+            right: "-12%",
+            width: "320px",
+            height: "320px",
+            background:
+              "radial-gradient(circle at 75% 30%, rgba(251, 191, 36, 0.25), transparent 55%)",
+          },
+        },
+      ],
+      mild: [
+        {
+          key: "mild-1",
+          className: "absolute rounded-full blur-3xl opacity-70 floating-blob slow",
+          style: {
+            top: "-10%",
+            left: "5%",
+            width: "380px",
+            height: "380px",
+            background:
+              "radial-gradient(circle at 30% 25%, rgba(96, 165, 250, 0.35), transparent 55%)",
+          },
+        },
+        {
+          key: "mild-2",
+          className: "absolute rounded-full blur-3xl opacity-50 floating-blob medium",
+          style: {
+            bottom: "-12%",
+            right: "-8%",
+            width: "340px",
+            height: "340px",
+            background:
+              "radial-gradient(circle at 75% 30%, rgba(191, 219, 254, 0.25), transparent 55%)",
+          },
+        },
+      ],
+      cool: [
+        {
+          key: "cool-1",
+          className: "absolute rounded-full blur-3xl opacity-70 floating-blob slow",
+          style: {
+            top: "-12%",
+            left: "-10%",
+            width: "420px",
+            height: "420px",
+            background:
+              "radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.40), transparent 55%)",
+          },
+        },
+        {
+          key: "cool-2",
+          className: "absolute rounded-full blur-3xl opacity-50 floating-blob medium",
+          style: {
+            bottom: "-10%",
+            right: "-10%",
+            width: "320px",
+            height: "320px",
+            background:
+              "radial-gradient(circle at 80% 35%, rgba(139, 92, 246, 0.22), transparent 55%)",
+          },
+        },
+      ],
+      cold: [
+        {
+          key: "cold-1",
+          className: "absolute rounded-full blur-3xl opacity-70 floating-blob slow",
+          style: {
+            top: "-10%",
+            left: "-8%",
+            width: "420px",
+            height: "420px",
+            background:
+              "radial-gradient(circle at 25% 20%, rgba(56, 189, 248, 0.35), transparent 55%)",
+          },
+        },
+        {
+          key: "cold-2",
+          className: "absolute rounded-full blur-3xl opacity-50 floating-blob medium",
+          style: {
+            bottom: "-12%",
+            right: "-10%",
+            width: "340px",
+            height: "340px",
+            background:
+              "radial-gradient(circle at 75% 35%, rgba(99, 102, 241, 0.25), transparent 55%)",
+          },
+        },
+      ],
+      freezing: [
+        {
+          key: "freezing-1",
+          className: "absolute rounded-full blur-3xl opacity-65 floating-blob slow",
+          style: {
+            top: "-8%",
+            left: "-8%",
+            width: "380px",
+            height: "380px",
+            background:
+              "radial-gradient(circle at 30% 30%, rgba(191, 219, 254, 0.35), transparent 55%)",
+          },
+        },
+        {
+          key: "freezing-2",
+          className: "absolute rounded-full blur-3xl opacity-45 floating-blob medium",
+          style: {
+            bottom: "-10%",
+            right: "-12%",
+            width: "320px",
+            height: "320px",
+            background:
+              "radial-gradient(circle at 70% 35%, rgba(220, 234, 255, 0.30), transparent 55%)",
+          },
+        },
+      ],
+      arctic: [
+        {
+          key: "arctic-1",
+          className: "absolute rounded-full blur-3xl opacity-65 floating-blob slow",
+          style: {
+            top: "-12%",
+            left: "-10%",
+            width: "420px",
+            height: "420px",
+            background:
+              "radial-gradient(circle at 20% 25%, rgba(186, 230, 253, 0.40), transparent 55%)",
+          },
+        },
+        {
+          key: "arctic-2",
+          className: "absolute rounded-full blur-3xl opacity-45 floating-blob medium",
+          style: {
+            bottom: "-10%",
+            right: "-8%",
+            width: "340px",
+            height: "340px",
+            background:
+              "radial-gradient(circle at 80% 30%, rgba(204, 228, 255, 0.28), transparent 55%)",
+          },
+        },
+      ],
+      rain: [
+        {
+          key: "rain-1",
+          className: "absolute rounded-full blur-3xl opacity-70 floating-blob slow",
+          style: {
+            top: "-10%",
+            left: "-8%",
+            width: "420px",
+            height: "420px",
+            background:
+              "radial-gradient(circle at 25% 25%, rgba(56, 189, 248, 0.30), transparent 55%)",
+          },
+        },
+        {
+          key: "rain-2",
+          className: "absolute rounded-full blur-3xl opacity-50 floating-blob medium",
+          style: {
+            bottom: "-10%",
+            right: "-10%",
+            width: "340px",
+            height: "340px",
+            background:
+              "radial-gradient(circle at 80% 35%, rgba(148, 163, 184, 0.28), transparent 55%)",
+          },
+        },
+      ],
+      storm: [
+        {
+          key: "storm-1",
+          className: "absolute rounded-full blur-3xl opacity-70 floating-blob slow",
+          style: {
+            top: "-10%",
+            left: "-8%",
+            width: "420px",
+            height: "420px",
+            background:
+              "radial-gradient(circle at 25% 25%, rgba(139, 92, 246, 0.35), transparent 55%)",
+          },
+        },
+        {
+          key: "storm-2",
+          className: "absolute rounded-full blur-3xl opacity-50 floating-blob medium",
+          style: {
+            bottom: "-10%",
+            right: "-10%",
+            width: "340px",
+            height: "340px",
+            background:
+              "radial-gradient(circle at 80% 35%, rgba(15, 23, 42, 0.28), transparent 55%)",
+          },
+        },
+      ],
+      snow: [
+        {
+          key: "snow-1",
+          className: "absolute rounded-full blur-3xl opacity-75 floating-blob slow",
+          style: {
+            top: "-8%",
+            left: "-8%",
+            width: "380px",
+            height: "380px",
+            background:
+              "radial-gradient(circle at 30% 25%, rgba(236, 253, 255, 0.45), transparent 55%)",
+          },
+        },
+        {
+          key: "snow-2",
+          className: "absolute rounded-full blur-3xl opacity-45 floating-blob medium",
+          style: {
+            bottom: "-12%",
+            right: "-10%",
+            width: "320px",
+            height: "320px",
+            background:
+              "radial-gradient(circle at 70% 35%, rgba(219, 234, 254, 0.35), transparent 55%)",
+          },
+        },
+      ],
+      cloudy: [
+        {
+          key: "cloudy-1",
+          className: "absolute rounded-full blur-3xl opacity-65 floating-blob slow",
+          style: {
+            top: "-10%",
+            left: "-8%",
+            width: "420px",
+            height: "420px",
+            background:
+              "radial-gradient(circle at 25% 25%, rgba(148, 163, 184, 0.35), transparent 55%)",
+          },
+        },
+        {
+          key: "cloudy-2",
+          className: "absolute rounded-full blur-3xl opacity-45 floating-blob medium",
+          style: {
+            bottom: "-12%",
+            right: "-10%",
+            width: "320px",
+            height: "320px",
+            background:
+              "radial-gradient(circle at 80% 35%, rgba(203, 213, 225, 0.30), transparent 55%)",
+          },
+        },
+      ],
+      fog: [
+        {
+          key: "fog-1",
+          className: "absolute rounded-full blur-3xl opacity-55 floating-blob slow",
+          style: {
+            top: "-10%",
+            left: "-8%",
+            width: "420px",
+            height: "420px",
+            background:
+              "radial-gradient(circle at 25% 25%, rgba(226, 232, 240, 0.40), transparent 55%)",
+          },
+        },
+        {
+          key: "fog-2",
+          className: "absolute rounded-full blur-3xl opacity-40 floating-blob medium",
+          style: {
+            bottom: "-12%",
+            right: "-10%",
+            width: "320px",
+            height: "320px",
+            background:
+              "radial-gradient(circle at 75% 30%, rgba(148, 163, 184, 0.24), transparent 55%)",
+          },
+        },
+      ],
+      default: [
+        {
+          key: "default-1",
+          className: "absolute rounded-full blur-3xl opacity-55 floating-blob slow",
+          style: {
+            top: "-10%",
+            left: "-8%",
+            width: "420px",
+            height: "420px",
+            background:
+              "radial-gradient(circle at 25% 25%, rgba(56, 189, 248, 0.35), transparent 55%)",
+          },
+        },
+      ],
+    };
+
+    const blobs = blobSets[theme] || blobSets.default;
+    return blobs.map((blob) => (
+      <div key={blob.key} className={blob.className} style={blob.style} />
+    ));
+  }
+
 
 
   async function getWeeklyForecast(lat, lon) {
@@ -451,11 +879,18 @@ export default function Home() {
   }
 
 
+  const textColorClass = textColors[theme] || "text-slate-900";
+
   return (
 
-    <div className={`min-h-screen pt-20 flex flex-col items-center justify-between text-black ${bg[theme]} p-6`}>
+    <div
+      className={`relative min-h-screen pt-20 flex flex-col items-center justify-between ${textColorClass} ${bg[theme]} p-6 overflow-hidden transition-colors duration-1000 ease-out`}
+    >
+      <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+        {renderBackgroundBlobs(theme)}
+      </div>
 
-      <header className=' backdrop-blur-md bg-white/10 shadow-md justify-between ' >
+      <header className={`relative z-10 backdrop-blur-md bg-white/10 shadow-md justify-between ${textColorClass}`} >
         <div className="logo">
           <a
             href="/"
@@ -500,7 +935,7 @@ export default function Home() {
               }
             }}
             placeholder="Enter city..."
-            className="hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 ease-out border-2 border-blue-500 flex-1 text-black px-4 py-2 rounded-lg text-black outline-none"
+            className="hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 ease-out border-2 border-blue-500 flex-1 text-current bg-white/15 px-4 py-2 rounded-lg outline-none"
           />
           <button
             onClick={() => getWeather()}
@@ -514,7 +949,7 @@ export default function Home() {
 
 
       {/* MAIN */}
-      <div className="flex-1 flex items-center flex-col justify-center w-full">
+      <div className="relative z-10 flex-1 flex items-center flex-col justify-center w-full">
 
         <div className=" hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 ease-out w-full flex justify-center items-center max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
 
@@ -525,7 +960,7 @@ export default function Home() {
               <div className="flex justify-center mb-6">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="w-32 h-32 text-black/80"
+                  className="w-32 h-32 text-current/80"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -539,25 +974,25 @@ export default function Home() {
                 </svg>
               </div>
 
-              <h2 className="text-3xl font-semibold text-black">
+              <h2 className="text-3xl font-semibold text-current">
                 Discover Weather Anywhere
               </h2>
 
-              <p className="mt-3 text-black/70 max-w-sm mx-auto">
+              <p className={`mt-3 ${subtleTextClass} max-w-sm mx-auto`}>
                 Enter any city, town, or location above to view live weather,
                 clothing recommendations, and a 7-day forecast.
               </p>
 
               <div className="mt-6 flex flex-wrap justify-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-white/10 text-black text-sm">
+                <span className="px-3 py-1 rounded-full bg-white/10 text-current text-sm">
                   🌍 Worldwide Search
                 </span>
 
-                <span className="px-3 py-1 rounded-full bg-white/10 text-black text-sm">
+                <span className="px-3 py-1 rounded-full bg-white/10 text-current text-sm">
                   📅 7-Day Forecast
                 </span>
 
-                <span className="px-3 py-1 rounded-full bg-white/10 text-black text-sm">
+                <span className="px-3 py-1 rounded-full bg-white/10 text-current text-sm">
                   👕 Outfit Suggestions
                 </span>
               </div>
@@ -580,7 +1015,7 @@ export default function Home() {
               </div>
 
               {/* Condition */}
-              <p className="text-slate-700">
+              <p className="text-current/80">
                 Feels like {Math.round(weather.feelsLike)}°
               </p>
 
@@ -603,7 +1038,7 @@ export default function Home() {
         rounded-2xl
         p-5
       ">
-                  <p className="text-sm text-slate-600">
+                  <p className={`text-sm ${cardSubtleTextClass}`}>
                     Wind
                   </p>
 
@@ -611,7 +1046,7 @@ export default function Home() {
                     {weather.wind}
                   </p>
 
-                  <p className="text-sm text-white/60">
+                  <p className={`text-sm ${cardSubtleTextClass}`}>
                     km/h
                   </p>
                 </div>
@@ -624,7 +1059,7 @@ export default function Home() {
     p-5
   "
                 >
-                  <p className="text-sm text-slate-600">
+                  <p className={`text-sm ${cardSubtleTextClass}`}>
                     Humidity
                   </p>
 
@@ -639,7 +1074,7 @@ export default function Home() {
         rounded-2xl
         p-5
       ">
-                  <p className="text-sm text-slate-600">
+                  <p className={`text-sm ${cardSubtleTextClass}`}>
                     Appropriate outfit?
                   </p>
 
@@ -671,7 +1106,7 @@ export default function Home() {
                       Max {Math.round(weeklyWeather.max[i])}° / Min {Math.round(weeklyWeather.min[i])}°
                     </div>
 
-                    <div className="text-xs text-slate-600">
+                    <div className={`text-xs ${cardSubtleTextClass}`}>
                       {conditions[weeklyWeather.code[i]] || "Unknown"}
                     </div>
                   </div>
@@ -684,7 +1119,7 @@ export default function Home() {
         <div className=" hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 ease-out mt-8 w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
           <h2 className="text-lg font-semibold mb-3">Pick a date</h2>
           <div className="flex flex-col gap-3">
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-current/80">
               Select a date from the calendar to view historical weather for the current location.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -694,7 +1129,7 @@ export default function Home() {
                 value={selectedDate}
                 max={getTodayISO()}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className=" border-2 border-blue-500 rounded-lg px-4 py-2 text-black"
+                className="border-2 border-blue-500 rounded-lg px-4 py-2 text-current bg-white/15"
               />
               <button
                 onClick={handleDateSelection}
@@ -706,20 +1141,20 @@ export default function Home() {
             </div>
             {selectedDateWeather && (
               <div className="mt-4 bg-white/10 border border-white/20 rounded-2xl p-4">
-                <p className="text-sm text-white/70">
+                <p className="text-sm text-current/80">
                   Historical weather for {selectedDateWeather.date}
                 </p>
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div className="bg-white/5 rounded-2xl p-3">
-                    <p className="text-xs text-slate-600">High</p>
+                    <p className={`text-xs ${cardSubtleTextClass}`}>High</p>
                     <p className="text-2xl font-semibold">{Math.round(selectedDateWeather.max)}°</p>
                   </div>
                   <div className="bg-white/5 rounded-2xl p-3">
-                    <p className="text-xs text-slate-600">Low</p>
+                    <p className={`text-xs ${cardSubtleTextClass}`}>Low</p>
                     <p className="text-2xl font-semibold">{Math.round(selectedDateWeather.min)}°</p>
                   </div>
                 </div>
-                <p className="mt-3 text-sm text-slate-700">
+                <p className={`mt-3 text-sm ${subtleTextClass}`}>
                   {conditions[selectedDateWeather.code] || "Unknown"}
                 </p>
               </div>
@@ -731,7 +1166,7 @@ export default function Home() {
       {/* ERROR TOAST (replaces inline error paragraph) */}
       {toastVisible && (
         <div className="fixed inset-x-0 bottom-4 z-50 flex justify-end px-4 pointer-events-none">
-          <div className="bg-red-600/95 text-black px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm pointer-events-auto">
+          <div className="bg-red-600/95 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm pointer-events-auto">
             <div className="flex-1 text-sm">{error}</div>
             <button
               onClick={() => {
@@ -739,7 +1174,7 @@ export default function Home() {
                 setError("");
               }}
               aria-label="Dismiss"
-              className="text-slate-900 hover:text-slate-800"
+              className="text-white/90 hover:text-white"
             >
               ✕
             </button>
@@ -748,7 +1183,7 @@ export default function Home() {
       )}
       {/* QUICK CITIES: clickable examples with typical climate notes */}
       <div className="w-full max-w-md mt-6">
-        <h3 className="text-center text-sm text-slate-700 mb-3">Don't have places in mind? Try these.</h3>
+        <h3 className="text-center text-sm text-current/80 mb-3">Don't have places in mind? Try these.</h3>
 
         <div className="flex flex-wrap justify-center gap-2 ">
           {quickCities.map((c) => (
@@ -759,16 +1194,16 @@ export default function Home() {
               <div className="flex flex-col text-left">
                 <button
                   onClick={() => getWeather(c.name)}
-                  className="hover:underline text-black"
+                  className="hover:underline text-current"
                 >
                   {c.name}
                 </button>
-                <span className="text-xs text-slate-600">{c.note}</span>
+                <span className={`text-xs ${cardSubtleTextClass}`}>{c.note}</span>
               </div>
 
               <button
                 onClick={() => copyCity(c.name)}
-                className="text-xs bg-black/30 px-2 py-1 rounded"
+                className="text-xs bg-white/10 px-2 py-1 rounded text-current"
               >
                 {copiedCity === c.name ? "Copied ✓" : "Copy"}
               </button>
@@ -796,25 +1231,25 @@ export default function Home() {
               📍
             </div>
 
-            <h2 className="text-2xl font-bold text-black">
+            <h2 className="text-2xl font-bold text-current">
               Enable Location Weather
             </h2>
 
-            <p className="text-black/80 mt-3 text-sm">
+            <p className={`mt-3 text-sm ${subtleTextClass}`}>
               Allow location access to instantly see weather for your current area
               without searching for a city.
             </p>
 
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <span className="bg-white/10 px-3 py-1 rounded-full text-xs text-black">
+              <span className="bg-white/10 px-3 py-1 rounded-full text-xs text-current">
                 Local Forecast
               </span>
 
-              <span className="bg-white/10 px-3 py-1 rounded-full text-xs text-black">
+              <span className="bg-white/10 px-3 py-1 rounded-full text-xs text-current">
                 Current Location Weather
               </span>
 
-              <span className="bg-white/10 px-3 py-1 rounded-full text-xs text-black">
+              <span className="bg-white/10 px-3 py-1 rounded-full text-xs text-current">
                 Faster Results
               </span>
             </div>
@@ -828,7 +1263,7 @@ export default function Home() {
           py-3
           rounded-2xl
           bg-blue-500
-          text-black
+          text-white
           font-semibold
           hover:bg-blue-600
           transition
@@ -840,7 +1275,7 @@ export default function Home() {
             </button>
 
             {locationAllowed === false && (
-              <p className="text-xs text-black/60 mt-3">
+              <p className={`text-xs ${subtleTextClass} mt-3`}>
                 Location permission is currently blocked. You can still use SkyCast
                 by searching for any place manually.
               </p>
