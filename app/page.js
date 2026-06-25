@@ -110,10 +110,19 @@ export default function Home() {
 
         try {
           const weatherRes = await fetch(
-            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`
+            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code&hourly=precipitation,visibility&daily=sunrise,sunset&timezone=auto`
           );
           const weatherData = await weatherRes.json();
           const w = weatherData.current || weatherData.current_weather;
+          const hourly = weatherData.hourly;
+          const daily = weatherData.daily;
+
+          const currentTime = w?.time;
+          const timeIndex = hourly?.time?.indexOf(currentTime) ?? 0;
+          const precipitation = timeIndex >= 0 ? hourly?.precipitation?.[timeIndex] ?? 0 : hourly?.precipitation?.[0] ?? 0;
+          const visibility = timeIndex >= 0 ? hourly?.visibility?.[timeIndex] ?? 0 : hourly?.visibility?.[0] ?? 0;
+          const sunrise = daily?.sunrise?.[0] ?? null;
+          const sunset = daily?.sunset?.[0] ?? null;
 
           const geoRes = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
@@ -127,19 +136,29 @@ export default function Home() {
             geoData.address.county ||
             "Unknown location";
 
+          const temp = w?.temperature_2m ?? w?.temperature;
+          const code = w?.weather_code ?? w?.weathercode;
+          const feelsLike = w?.apparent_temperature;
+          const humidity = w?.relative_humidity_2m;
+          const wind = w?.wind_speed_10m ?? w?.windspeed;
+
           await getWeeklyForecast(lat, lon);
-          setTheme(getThemeWithTemp(w.weather_code, w.temperature_2m));
+          setTheme(getThemeWithTemp(code, temp));
           setLocationCoords({ latitude: lat, longitude: lon });
           setCity(cityName);
 
           setWeather({
             name: cityName,
-            temp: w.temperature_2m,
-            feelsLike: w.apparent_temperature,
-            humidity: w.relative_humidity_2m,
-            wind: w.wind_speed_10m,
-            condition: conditions[w.weather_code] || "Unknown",
-            gear: getGear(w.weather_code, w.temperature_2m),
+            temp,
+            feelsLike,
+            humidity,
+            wind,
+            condition: conditions[code] || "Unknown",
+            gear: getGear(code, temp),
+            precipitation,
+            visibility,
+            sunrise,
+            sunset,
           });
 
           setLocationAllowed(true);
@@ -234,32 +253,60 @@ export default function Home() {
 
   // Determine recommended clothing. Prefer temperature-based suggestions
   // when a temperature is available (handles extreme places like Antarctica).
-  function getGear(code, temp) {
-    // If we have a numeric temperature, prioritize it for recommendations
-    if (typeof temp === "number" && !Number.isNaN(temp)) {
-      if (temp <= -20)
-        return "❄️ Extreme cold — heavy parka, insulated layers, balaclava, extreme-cold gear";
-      if (temp <= 0) return "❄️ Very cold — heavy coat, insulated boots, gloves, hat";
-      if (temp <= 5) return "🧥 Cold — warm coat, layers, hat and gloves";
-      if (temp <= 12) return "🧣 Cool — light coat or sweater and layers";
-      if (temp <= 20) return "🧥 Mild — long-sleeve or light jacket";
-      if (temp <= 28) return "☀️ Warm — T-shirt, light layers, sunscreen";
-      if (temp >= 35) return "🔥 Heat alert — very light clothing, stay hydrated, avoid midday sun";
-      return "☀️ Comfortable — light clothing and a layer";
-    }
+ function getGear(code, temp) {
+  // Temperature-based recommendations (primary logic)
+  if (typeof temp === "number" && !Number.isNaN(temp)) {
+    if (temp <= -20)
+      return "❄️ Extremely cold — wear a thick winter coat, thermal layers, gloves, scarf, and a hat. Stay covered at all times.";
 
-    // Fallback to weather code heuristics when temperature isn't available
-    if (code === 0) return "☀️ Sunny — T-shirt, sunglasses, sunscreen";
-    if ([1, 2].includes(code)) return "🌤️ Light layers — long-sleeve or light jacket";
-    if (code === 3) return "⛅ Mild — light sweater or shirt";
-    if ([45].includes(code)) return "🌫️ Fog — wear high-visibility or reflective layers";
-    if ([51, 61, 63, 65].includes(code))
-      return "🌧️ Rain — waterproof jacket, umbrella, water-resistant shoes";
-    if ([71, 73, 75].includes(code))
-      return "❄️ Snow — warm coat, insulated boots, gloves, hat";
-    if (code === 95) return "⛈️ Storm — avoid travel, stay indoors if possible";
-    return "👕 Check local conditions and dress in layers";
+    if (temp <= -10)
+      return "❄️ Very cold — heavy coat, warm jumper, gloves, hat, and insulated boots. Keep skin covered.";
+
+    if (temp <= 0)
+      return "❄️ Freezing — warm winter coat, layers (t-shirt + jumper), gloves, scarf, and warm shoes.";
+
+    if (temp <= 5)
+      return "🧥 Very cold — thick coat, jumper, long trousers, and warm shoes. Gloves recommended.";
+
+    if (temp <= 12)
+      return "🧣 Cold — light coat or hoodie, jeans, and closed shoes. You may need a light scarf.";
+
+    if (temp <= 20)
+      return "🧥 Mild — t-shirt with a light jacket or hoodie. Comfortable trousers or jeans.";
+
+    if (temp <= 28)
+      return "☀️ Warm — t-shirt or light top, shorts or thin trousers. Stay hydrated and wear sunglasses.";
+
+    if (temp <= 35)
+      return "🔥 Very hot — light t-shirt, shorts, breathable clothes. Avoid heavy fabrics and stay in shade.";
+
+    return "🔥 Extreme heat — very light clothing, drink lots of water, avoid direct sun, and stay cool indoors.";
   }
+
+  // Weather-code fallback (when temperature is missing)
+  if (code === 0)
+    return "☀️ Clear sky — light clothes like t-shirt and shorts. Sunglasses and sunscreen are good.";
+
+  if ([1, 2].includes(code))
+    return "🌤️ Mostly clear — light clothes with a thin jacket just in case it gets cooler.";
+
+  if (code === 3)
+    return "☁️ Cloudy — normal everyday clothes like jeans and a t-shirt or hoodie.";
+
+  if ([45, 48].includes(code))
+    return "🌫️ Foggy — wear visible or bright clothes and a light jacket. Be careful outside.";
+
+  if ([51, 53, 55, 61, 63, 65].includes(code))
+    return "🌧️ Rainy — waterproof jacket, umbrella, and shoes that can handle wet ground.";
+
+  if ([71, 73, 75, 77].includes(code))
+    return "❄️ Snowy — warm coat, thick trousers, gloves, hat, and waterproof boots.";
+
+  if ([95, 96, 99].includes(code))
+    return "⛈️ Storm — stay indoors if possible. If going out, wear waterproof coat and stay safe.";
+
+  return "👕 Normal day — wear comfortable clothes and check conditions before going out.";
+}
 
   function getWeekday(dateString) {
     const date = new Date(dateString);
@@ -295,20 +342,28 @@ export default function Home() {
       await getWeeklyForecast(latitude, longitude);
 
       const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code&hourly=precipitation,visibility&daily=sunrise,sunset&timezone=auto`
       );
       const data = await res.json();
-const w = data.current || data.current_weather;
-          const temp = w?.temperature_2m ?? w?.temperature;
-          const code = w?.weather_code ?? w?.weathercode;
+      const w = data.current || data.current_weather;
+      const hourly = data.hourly;
+      const daily = data.daily;
+      const temp = w?.temperature_2m ?? w?.temperature;
+      const code = w?.weather_code ?? w?.weathercode;
+      const currentTime = w?.time;
+      const timeIndex = hourly?.time?.indexOf(currentTime) ?? 0;
+      const precipitation = timeIndex >= 0 ? hourly?.precipitation?.[timeIndex] ?? 0 : hourly?.precipitation?.[0] ?? 0;
+      const visibility = timeIndex >= 0 ? hourly?.visibility?.[timeIndex] ?? 0 : hourly?.visibility?.[0] ?? 0;
+      const sunrise = daily?.sunrise?.[0] ?? null;
+      const sunset = daily?.sunset?.[0] ?? null;
 
       console.log("w: ", w)
       console.log("Temp:", temp);
       console.log("Code:", code);
       console.log("Theme:", getThemeWithTemp(code, temp));
       setTheme(getThemeWithTemp(
-  code,
-  temp
+        code,
+        temp
       ));
 
       setWeather({
@@ -317,8 +372,12 @@ const w = data.current || data.current_weather;
         feelsLike: w.apparent_temperature,
         humidity: w.relative_humidity_2m,
         wind: w.wind_speed_10m,
-        condition: conditions[w.weather_code] || "Unknown",
-        gear: getGear(w.weather_code, w.temperature_2m),
+        condition: conditions[code] || "Unknown",
+        gear: getGear(code, temp),
+        precipitation,
+        visibility,
+        sunrise,
+        sunset,
       });
 
       setCity(name);
@@ -1015,7 +1074,7 @@ const w = data.current || data.current_weather;
               </div>
 
               {/* Condition */}
-              <p className="text-current/80">
+              <p className="text-current/80 mb-5">
                 Feels like {Math.round(weather.feelsLike)}°
               </p>
 
@@ -1026,9 +1085,7 @@ const w = data.current || data.current_weather;
 
               {/* Extra stats */}
               <div className="
-      mt-8
       grid grid-cols-2 gap-4
-      max-w-sm mx-auto
     ">
 
                 <div className="
@@ -1050,7 +1107,21 @@ const w = data.current || data.current_weather;
                     km/h
                   </p>
                 </div>
-                <div
+                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5">
+                  <p className={`text-sm ${cardSubtleTextClass}`}>Precipitation</p>
+                  <p className="text-3xl font-semibold mt-1">
+                    {weather.precipitation ?? 0}
+                  </p>
+                  <p className={`text-sm ${cardSubtleTextClass}`}>mm</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5">
+                  <p className={`text-sm ${cardSubtleTextClass}`}>Visibility</p>
+                  <p className="text-3xl font-semibold mt-1">
+                    {weather.visibility ? Math.round(weather.visibility / 1000) : 0}
+                  </p>
+                  <p className={`text-sm ${cardSubtleTextClass}`}>km</p>
+                </div>
+               <div
                   className="
     bg-white/10
     backdrop-blur-xl
@@ -1067,21 +1138,35 @@ const w = data.current || data.current_weather;
                     {weather.humidity}%
                   </p>
                 </div>
-                <div className="
-        bg-white/10
-        backdrop-blur-xl
-        border border-white/20
-        rounded-2xl
-        p-5
-      ">
-                  <p className={`text-sm ${cardSubtleTextClass}`}>
-                    Appropriate outfit?
-                  </p>
 
-                  <p className="text-sm mt-2">
-                    {weather.gear}
+                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5">
+                  <p className={`text-sm ${cardSubtleTextClass}`}>Sunset</p>
+                  <p className="text-xl font-semibold mt-1">
+                    {weather.sunset ? new Date(weather.sunset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--"}
                   </p>
                 </div>
+                 <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5">
+                  <p className={`text-sm ${cardSubtleTextClass}`}>Sunrise</p>
+                  <p className="text-xl font-semibold mt-1">
+                    {weather.sunrise ? new Date(weather.sunrise).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--"}
+                  </p>
+                </div>
+                <div className="
+  col-span-2
+  bg-white/10
+  backdrop-blur-xl
+  border border-white/20
+  rounded-2xl
+  p-5
+">
+  <p className={`text-sm ${cardSubtleTextClass}`}>
+    Appropriate outfit?
+  </p>
+
+  <p className="text-sm mt-2">
+    {weather.gear}
+  </p>
+</div>
 
               </div>
 
