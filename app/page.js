@@ -500,7 +500,7 @@ export default function Home() {
               }
             }}
             placeholder="Enter city..."
-            className="hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 ease-out border-2 border-blue-500 flex-1 text-white px-4 py-2 rounded-lg text-black outline-none"
+            className="hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 ease-out border-2 border-blue-500 flex-1 text-black px-4 py-2 rounded-lg text-black outline-none"
           />
           <button
             onClick={() => getWeather()}
