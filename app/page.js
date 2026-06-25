@@ -292,10 +292,10 @@ export default function Home() {
       console.log("Temp:", w.temperature_2m);
       console.log("Code:", w.weather_code);
       console.log("Theme:", getThemeWithTemp(w.weather_code, w.temperature_2m));
-     setTheme(getThemeWithTemp(
-  w.weather_code,
-  w.temperature_2m
-));
+      setTheme(getThemeWithTemp(
+        w.weather_code,
+        w.temperature_2m
+      ));
 
       setWeather({
         name,
@@ -377,8 +377,8 @@ export default function Home() {
 
     fog:
       "bg-gradient-to-br from-stone-300 via-gray-400 to-slate-600",
-default:
-  "bg-gradient-to-br from-yellow-100 via-sky-100 to-white",
+    default:
+  "bg-gradient-to-br from-blue-50 via-sky-100 to-cyan-100",
   };
 
 
@@ -517,9 +517,53 @@ default:
       <div className="flex-1 flex items-center flex-col justify-center w-full">
 
         <div className=" hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 ease-out w-full flex justify-center items-center max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
-         
 
 
+          {!weather && (
+            <div className="text-center py-8">
+
+              <div className="flex justify-center mb-6">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-32 h-32 text-black/80"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M3 15a4 4 0 014-4h1a5 5 0 019.9-1A3.5 3.5 0 0118.5 17H7a4 4 0 01-4-2z"
+                  />
+                </svg>
+              </div>
+
+              <h2 className="text-3xl font-semibold text-black">
+                Discover Weather Anywhere
+              </h2>
+
+              <p className="mt-3 text-black/70 max-w-sm mx-auto">
+                Enter any city, town, or location above to view live weather,
+                clothing recommendations, and a 7-day forecast.
+              </p>
+
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-white/10 text-black text-sm">
+                  🌍 Worldwide Search
+                </span>
+
+                <span className="px-3 py-1 rounded-full bg-white/10 text-black text-sm">
+                  📅 7-Day Forecast
+                </span>
+
+                <span className="px-3 py-1 rounded-full bg-white/10 text-black text-sm">
+                  👕 Outfit Suggestions
+                </span>
+              </div>
+
+            </div>
+          )}
           {/* WEATHER */}
           {weather && (
             <div className="mt-8 text-center">
@@ -636,35 +680,7 @@ default:
             </div>
           </div>
         )}
-        {locationAllowed !== true && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md px-4">
-    <div className="w-full max-w-sm rounded-2xl bg-white/10 border border-white/20 shadow-2xl p-6 text-center backdrop-blur-xl animate-in fade-in zoom-in duration-300">
 
-      <div className="text-3xl mb-2">📍</div>
-
-      <h2 className="text-lg font-semibold text-white">
-        Location Access Needed
-      </h2>
-
-      <p className="text-xs text-white/70 mt-2">
-        We use your location to show accurate local weather conditions.
-      </p>
-
-      <button
-        onClick={getUserLocation}
-        className="mt-5 w-full px-4 py-2 rounded-xl bg-blue-500 text-white hover:bg-blue-600 transition hover:scale-[1.02]"
-      >
-        {locationAllowed === false ? "Retry Location" : "Use My Location"}
-      </button>
-
-      {locationAllowed === false && (
-        <p className="text-xs text-white/60 mt-3">
-          If permission was denied, enable location in your browser settings and try again.
-        </p>
-      )}
-    </div>
-  </div>
-)}
         <div className=" hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 ease-out mt-8 w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
           <h2 className="text-lg font-semibold mb-3">Pick a date</h2>
           <div className="flex flex-col gap-3">
@@ -760,7 +776,78 @@ default:
           ))}
         </div>
       </div>
+      {locationAllowed !== true && (
+        <div className="w-full max-w-md mt-8">
+          <div
+            className="
+        bg-white/10
+        backdrop-blur-xl
+        border border-white/20
+        rounded-3xl
+        p-6
+        shadow-2xl
+        text-center
+        hover:scale-[1.02]
+        transition-all
+        duration-300
+      "
+          >
+            <div className="text-5xl mb-3">
+              📍
+            </div>
 
+            <h2 className="text-2xl font-bold text-black">
+              Enable Location Weather
+            </h2>
+
+            <p className="text-black/80 mt-3 text-sm">
+              Allow location access to instantly see weather for your current area
+              without searching for a city.
+            </p>
+
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <span className="bg-white/10 px-3 py-1 rounded-full text-xs text-black">
+                Local Forecast
+              </span>
+
+              <span className="bg-white/10 px-3 py-1 rounded-full text-xs text-black">
+                Current Location Weather
+              </span>
+
+              <span className="bg-white/10 px-3 py-1 rounded-full text-xs text-black">
+                Faster Results
+              </span>
+            </div>
+
+            <button
+              onClick={getUserLocation}
+              className="
+          mt-5
+          w-full
+          px-4
+          py-3
+          rounded-2xl
+          bg-blue-500
+          text-black
+          font-semibold
+          hover:bg-blue-600
+          transition
+        "
+            >
+              {locationAllowed === false
+                ? "Retry Location Access"
+                : "Use My Location"}
+            </button>
+
+            {locationAllowed === false && (
+              <p className="text-xs text-black/60 mt-3">
+                Location permission is currently blocked. You can still use SkyCast
+                by searching for any place manually.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
